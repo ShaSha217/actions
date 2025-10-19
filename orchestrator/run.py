@@ -15,17 +15,44 @@ PUBLISH_DRY = os.environ.get("PUBLISH_DRY_RUN","true").lower()=="true"
 # === Notion helpers ===
 notion = Client(auth=NOTION_TOKEN)
 
+def find_status_prop(db_id: str):
+    """DBのプロパティから、DRAFTオプションを持つ 'status' 型 or 'select' 型のプロパティを探す"""
+    meta = notion.databases.retrieve(db_id)
+    for name, info in meta["properties"].items():
+        ptype = info.get("type")
+        if ptype not in ("status", "select"):
+            continue
+        opts = info.get(ptype, {}).get("options", [])
+        opt_names = {o.get("name") for o in opts}
+        if "DRAFT" in opt_names:
+            return name, ptype
+    # 見つからなければ None
+    return None, None
+
 def get_one_draft():
+    prop_name, prop_type = find_status_prop(DB_ID)
+    if not prop_name:
+        # フォールバック：フィルターなしで1行返す（初期構築用）
+        return notion.databases.query(database_id=DB_ID, page_size=1).get("results", [None])[0]
+
+    # status型なら {"status": {...}}、select型なら {"select": {...}}
+    cond_key = "status" if prop_type == "status" else "select"
     q = notion.databases.query(
-        **{"database_id": DB_ID, "filter": {"and":[
-            {"property":"status","select":{"equals":"DRAFT"}}
-        ]}, "page_size": 1}
+        database_id=DB_ID,
+        filter={"property": prop_name, cond_key: {"equals": "DRAFT"}},
+        page_size=1
     )
-    results = q.get("results",[])
+    results = q.get("results", [])
     return results[0] if results else None
 
-def set_status(page_id, status):
-    notion.pages.update(page_id, properties={"status":{"select":{"name":status}}})
+
+def set_status(page_id, status_value):
+    prop_name, prop_type = find_status_prop(DB_ID)
+    if not prop_name:
+        # プロパティが無ければ何もしない（初期構築フォールバック）
+        return
+    key = "status" if prop_type == "status" else "select"
+    notion.pages.update(page_id, properties={prop_name: {key: {"name": status_value}}})
 
 def set_props(page_id, props):
     notion.pages.update(page_id, properties=props)
