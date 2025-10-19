@@ -23,7 +23,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run orchestrator
-        env:                           # ← これが重要
+        env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DB_ID_CONTENT: ${{ secrets.NOTION_DB_ID_CONTENT }}
         run: |
