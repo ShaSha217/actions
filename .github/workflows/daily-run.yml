@@ -2,8 +2,8 @@ name: daily-run
 
 on:
   schedule:
-    - cron: "0 21 * * *"   # JST 06:00（UTC 21:00）
-  workflow_dispatch:       # 手動実行ボタン
+    - cron: "0 21 * * *"   # JST 06:00
+  workflow_dispatch:
 
 jobs:
   run:
@@ -23,5 +23,8 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run orchestrator
+        env:                           # ← これが重要
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DB_ID_CONTENT: ${{ secrets.NOTION_DB_ID_CONTENT }}
         run: |
           python orchestrator/run.py
