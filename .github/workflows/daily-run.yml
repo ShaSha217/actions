@@ -22,7 +22,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run orchestrator
+      - name: Run orchestrator (debug)
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DB_ID_CONTENT: ${{ secrets.NOTION_DB_ID_CONTENT }}
